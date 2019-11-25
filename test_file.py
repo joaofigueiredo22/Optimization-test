@@ -67,6 +67,7 @@ for i in range(500):
         d = d1
         e = e1
 
+
     # Plot the data
     plt.plot(x, f1(x), 'b', label='Funcao original')
     plt.plot(x, f2(x, a, b, c, d, e), 'r', label='Funcao otimizada')
