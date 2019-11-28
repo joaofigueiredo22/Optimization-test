@@ -32,7 +32,7 @@ def f2(xx, ax, bx, cx, dx, ex):
 def somar_elementos(lista):
   soma = 0
   for numero in lista:
-    soma += numero
+    soma += np.absolute(numero)
   return soma
 
 
@@ -41,9 +41,11 @@ def somar_elementos(lista):
 err1 = f1(x) - f2(x, a, b, c, d, e)
 err1 = somar_elementos(err1)/len(err1)
 
-
-
-
+plt.plot(x, f1(x), 'b', label='Funcao original')
+plt.plot(x, f2(x, a, b, c, d, e), 'r', label='Funcao otimizada')
+# Add a legend
+plt.legend()
+plt.title('Iteracao: 1' + '  Erro medio: '+ str(err1))
 # Main loop
 for i in range(500):
     a1 = random.uniform(-1, 1)
@@ -56,7 +58,7 @@ for i in range(500):
     for xi in x:
         count = count + 1
         err = f1(xi) - f2(xi, a1, b1, c1, d1, e1)
-        media_error = media_error + err
+        media_error = media_error + np.absolute(err)
     media_error=media_error/count
 
     if np.absolute(err1) > np.absolute(media_error):
@@ -71,12 +73,20 @@ for i in range(500):
     # Plot the data
     plt.plot(x, f1(x), 'b', label='Funcao original')
     plt.plot(x, f2(x, a, b, c, d, e), 'r', label='Funcao otimizada')
+    # Add a legend
+    plt.legend()
+
+    plt.title('Iteracao: '+ str(i) + '  Erro medio: '+ str(err1))
     plt.pause(0.01)
     plt.clf()
 
-
+ # Plot the data
+plt.plot(x, f1(x), 'b', label='Funcao original')
+plt.plot(x, f2(x, a, b, c, d, e), 'r', label='Funcao otimizada')
 # Add a legend
 plt.legend()
+plt.title('Iteracao: '+ str(i) + '  Erro medio: '+ str(err1))
+
 # Show the plot
 plt.show()
 
