@@ -5,30 +5,52 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import argparse
 
 # Prepare the data
 x = np.linspace(-1, 1, 100)
 
-# First guess
-e = 1
-d = 1
-c = 3
-b = 2
-a = 4
+# Read from the command line, the function degree
+ap = argparse.ArgumentParser()
+ap.add_argument("-ngrau", "--grau", help="Function Degree", type=int, required=True)
+args = vars(ap.parse_args())
+ngrau = args['grau']
 
+if ngrau < 0:
+    ngrau = 0
 
 # First function
 def f1(xx):
     return xx * np.cos(xx)
     #  return xx
 
+
 # Second function
-def f2(xx, ax, bx, cx, dx, ex):
-    return ex * xx ** 4 + dx * xx ** 3 + cx * xx ** 2 + bx * xx + ax
+def f2(xx, vv, grau):
+    f2_1 = 0
+    for numgrau in range(grau + 1):
+        f2_1 = f2_1 + vv[numgrau] * xx ** numgrau
+    return f2_1
+
+
+# Error function
+def f3(xx, vv, grau):
+    f=f1(xx)
+    for numgrau in range(grau + 1):
+        f = f - vv[numgrau] * xx ** numgrau
+    return f
+
+# Create vetor with variables
+
+
+def createv(grau1):
+    vv = np.zeros(grau1 + 1, dtype=float)
+    for numgrau1 in range(0, grau1 + 1):
+        vv[numgrau1] = random.uniform(-2, 2)
+    return vv
 
 
 # Function to help adding all the values of one array
-
 def calcular_erro(lista):
     soma = 0
     for numero in lista:
@@ -38,28 +60,28 @@ def calcular_erro(lista):
     return soma
     # return np.amax(np.absolute(lista))
 
-# First guess error
 
-err1 = f1(x) - f2(x, a, b, c, d, e)
-err1 = calcular_erro(err1)
-v=[a , b, c, d, e]
+# First guess error
+v = createv(ngrau)
+err1 = calcular_erro(f3(x, v, ngrau))
+
 
 plt.plot(x, f1(x), 'b', label='Funcao original')
-plt.plot(x, f2(x, a, b, c, d, e), 'r', label='Funcao otimizada')
+plt.plot(x, f2(x, v, ngrau), 'r', label='Funcao otimizada')
 # Add a legend
 plt.legend()
-plt.title('Iteracao: 1' + '  Erro Total: '+ str(err1))
+plt.title("Funcao de grau " + str(ngrau) + "   Iteracao: " + str(0) + "\n  Erro Total: " + str(err1))
 
 dir = 0.0001
 step = 0.1
 
 # Main loop
-for i in range(1000):
+for i in range(200):
 
     ind = 0
 
     # direcoes=np.zeros((1, 5), np.float32)
-    direcoes=[0,0,0,0,0]
+    direcoes = np.zeros(ngrau+1)
 
     for r in v:
         r1 = r+dir
@@ -69,8 +91,8 @@ for i in range(1000):
         v1[ind] = r1 * 1
         v2 = v * 1
         v2[ind] = r2 * 1
-        erro1 = calcular_erro(f1(x)-f2(x,v1[0],v1[1],v1[2],v1[3],v1[4]))
-        erro2 = calcular_erro(f1(x)-f2(x,v2[0],v2[1],v2[2],v2[3],v2[4]))
+        erro1 = calcular_erro(f3(x, v1, ngrau))
+        erro2 = calcular_erro(f3(x, v2, ngrau))
 
         if erro2 < erro1:
 
@@ -87,21 +109,21 @@ for i in range(1000):
 
     newv = v + np.dot(step,direcoes)
 
-    erro = calcular_erro(f1(x) - f2(x, v[0], v[1], v[2], v[3], v[4]))
-    newerro = calcular_erro(f1(x) - f2(x, newv[0], newv[1], newv[2], newv[3], newv[4]))
+    erro = calcular_erro(f3(x, v, ngrau))
+    newerro = calcular_erro(f3(x, newv, ngrau))
 
     if newerro < erro:
         v = newv * 1
         plt.clf()
         # Plot the data
         plt.plot(x, f1(x), 'b', label='Funcao original')
-        plt.plot(x, f2(x, v[0], v[1], v[2], v[3], v[4]), 'r', label='Funcao otimizada')
+        plt.plot(x, f2(x, v, ngrau), 'r', label='Funcao otimizada')
         # Add a legend
         plt.legend()
-        plt.title('Iteracao: ' + str(i) + '  Erro Total: ' + str(erro))
+        plt.title("Funcao de grau " + str(ngrau) + "   Iteracao: " + str(i) + "\n  Erro Total: " + str(erro))
         plt.pause(0.00001)
     else:
-        step=step/2
+        step = step/2
 
     # a1 = random.uniform(-1, 1)
     # b1 = random.uniform(-1, 1)
@@ -136,4 +158,5 @@ for i in range(1000):
 # Show the plot
 plt.show()
 print(v, direcoes, step)
+print("\nGrau = " + str(ngrau))
 
