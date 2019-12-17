@@ -12,9 +12,10 @@ x = np.linspace(-1, 1, 100)
 
 # Read from the command line, the function degree
 ap = argparse.ArgumentParser()
-ap.add_argument("-ngrau", "--grau", help="Function Degree", type=int, required=True)
+ap.add_argument("-ngrau", "--numero_grau", help="Function Degree", type=int, required=True)
+ap.add_argument("-maxit", "--max_iterations", help="Maximum number of iterations", type=int, required=False, default=500)
 args = vars(ap.parse_args())
-ngrau = args['grau']
+ngrau = args['numero_grau']
 
 if ngrau < 0:
     ngrau = 0
@@ -76,7 +77,7 @@ dir = 0.0001
 step = 0.1
 
 # Main loop
-for i in range(200):
+for i in range(args['max_iterations']):
 
     ind = 0
 
