@@ -167,6 +167,11 @@ def main():
     print()
     print('Erro medio:\n')
     print(np.mean(objective_function(params_optimized[0])))
+    print('\nTRANSFORMACAO CAMERA 2 PARA CAMERA 1:')
+    print('\nVetor de rotacoes:\n')
+    print(params_optimized[0][0:3])
+    print('\nVetor de translacoes:\n')
+    print(params_optimized[0][3:])
 
 
 if __name__ == "__main__":
