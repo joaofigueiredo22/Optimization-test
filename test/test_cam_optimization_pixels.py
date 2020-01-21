@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-
+import json
 import numpy as np
 import cv2
 import glob
@@ -64,9 +64,8 @@ def objective_function(params):
     return residuals
 
 
-def objective_functionv2(params, points_chessboard):
+def objective_functionv2(params, points_chessboard, report):
     # TODO you should read the image once and store in memory
-
 
     # Get T from left camera to chess
     rvec_cam_left, tvec_cam_left = find_cam_chess_realpoints('./fotos_calibration/top_left_camera_4.jpg', 0)
@@ -115,9 +114,13 @@ def objective_functionv2(params, points_chessboard):
     pts_right_cam_opt = np.matmul(right_cam_T_chess_opt, points_chessboard_homogeneous)
     pts_right_cam_ground_truth = np.matmul(right_cam_T_chess_ground_truth, points_chessboard_homogeneous)
 
+    # error_sum = 0
     for i in range(dimensions[0] * dimensions[1]):
         residuals[i] = np.sqrt((imgpoints_right_optimize[0][i][0][0] - imgpoints_right_real[0][i][0][0]) ** 2 + (
                     imgpoints_right_optimize[0][i][0][1] - imgpoints_right_real[0][i][0][1]) ** 2)
+        # error_sum += residuals[i]
+
+    report['errors'].append(np.mean(residuals))
 
     return residuals
 
@@ -182,6 +185,13 @@ pts_chessboard = generate_chessboard(0.101, (9, 6))
 
 def main():
 
+    # A = (2,4,"ola")
+    # B = [3,4,4,65]
+    #
+    # C = {"0": 345, "1": "tudo bem", "77": [5,34,12,7]}
+
+
+
     # Arrays to store object points and image points from all the images.
     objpoints_left = []  # 3d point in real world space from left camera
     imgpoints_left = []  # 2d points in image plane from left camera.
@@ -224,9 +234,25 @@ def main():
     # params_initial =np.concatenate(( t_cam2tocam1.T,r_vector_cam2tocam1.T),axis=None)
     params_initial = [1.0, 0.0, 0.0, 0.1050, -0.2000, 0.1500]
 
+    report = {"errors": []}
+
     # print(objective_function(params_initial))
+    # params_optimized = optimize.leastsq(func=objective_functionv2, x0=np.array(params_initial).reshape(1, 6),
+    #                                     epsfcn=0.000001, args=(pts_chessboard))
     params_optimized = optimize.leastsq(func=objective_functionv2, x0=np.array(params_initial).reshape(1, 6),
-                                        epsfcn=0.000001, args=(pts_chessboard))
+                                        epsfcn=0.000001, args=(pts_chessboard, report))
+
+    output_file = "test_json.json"
+    print("Saving the json output file to " + str(output_file) + ", please wait, it could take a while ...")
+    json_file_handle = open(output_file, 'w')
+    json.encoder.FLOAT_REPR = lambda f: ("%.6f" % f)  # to get only four decimal places on the json file
+    print >> json_file_handle, json.dumps(report, indent=2, sort_keys=True)
+    json_file_handle.close()
+    print("Completed.")
+
+    exit(0)
+
+
     params_optimized_3d = optimize.leastsq(func=objective_function, x0=np.array(params_initial).reshape(1, 6),
                                         epsfcn=0.000001)
 
