@@ -13,9 +13,9 @@ def generate_chessboard(size, dimensions=(9, 6)):
     return objp
 
 
-def objective_function(params):
-    rvec_left, tvec_left = find_cam_chess_realpoints('./fotos_calibration/top_left_camera_4.jpg', 0)
-    rvec_right, tvec_right = find_cam_chess_realpoints('./fotos_calibration/top_right_camera_4.jpg', 1)
+def objective_function(params, report):
+    rvec_left, tvec_left = find_cam_chess_realpoints(name_image_left, 0)
+    rvec_right, tvec_right = find_cam_chess_realpoints(name_image_right, 1)
 
     t2_t1 = np.zeros((4, 4), np.float32)
     t2_t1[0:3, 0:3], _ = cv2.Rodrigues(params[0:3])
@@ -33,8 +33,9 @@ def objective_function(params):
     t_cam2tochess = T2_chess_real[0:3, 3]
     imgpoints_right_optimize = cv2.projectPoints(pts_chessboard, r_cam2tochess_vector, t_cam2tochess, k_right,
                                                  dist_right)
+    imgpoints_right_real = cv2.projectPoints(pts_chessboard, rvec_right, tvec_right, k_right, dist_right)
 
-    img1 = cv2.imread('./fotos_calibration/top_right_camera_4.jpg')
+    img1 = cv2.imread(name_image_right)
     img = cv2.drawChessboardCorners(img1, (9, 6), imgpoints_right_optimize[0], True)
     cv2.imshow('img', img)
     cv2.waitKey(200)
@@ -53,6 +54,7 @@ def objective_function(params):
     objp_right[3, :] = 1
 
     residuals = np.zeros((dimensions[0] * dimensions[1]))
+    residuals_pixels = np.zeros((dimensions[0]*dimensions[1]))
 
     for i in range(dimensions[0] * dimensions[1]):
         points_op = np.matmul(np.array(t2_chess), objp_right[:, i].reshape((4, 1)))
@@ -60,7 +62,10 @@ def objective_function(params):
         residuals[i] = np.sqrt(
             (points_op[0] - points_real_right[0]) ** 2 + (points_op[1] - points_real_right[1]) ** 2 + (
                         points_op[2] - points_real_right[2]) ** 2)
+        residuals_pixels[i] = np.sqrt((imgpoints_right_optimize[0][i][0][0] - imgpoints_right_real[0][i][0][0]) ** 2 + (
+                imgpoints_right_optimize[0][i][0][1] - imgpoints_right_real[0][i][0][1]) ** 2)
 
+    report["image_1"][name_errors_3d].append(np.mean(residuals_pixels))
     return residuals
 
 
@@ -68,7 +73,7 @@ def objective_functionv2(params, points_chessboard, report):
     # TODO you should read the image once and store in memory
 
     # Get T from left camera to chess
-    rvec_cam_left, tvec_cam_left = find_cam_chess_realpoints('./fotos_calibration/top_left_camera_4.jpg', 0)
+    rvec_cam_left, tvec_cam_left = find_cam_chess_realpoints(name_image_left, 0)
     left_cam_T_chess = np.zeros((4, 4), np.float32)
     left_cam_T_chess[0:3, 0:3], _ = cv2.Rodrigues(rvec_cam_left)
     left_cam_T_chess[0:3, 3] = tvec_cam_left.T
@@ -84,7 +89,7 @@ def objective_functionv2(params, points_chessboard, report):
     right_cam_T_chess_opt = np.matmul(right_cam_T_left_cam, left_cam_T_chess)
 
     # Get T from right camera to chess (ground truth)
-    rvec_cam_right, tvec_cam_right = find_cam_chess_realpoints('./fotos_calibration/top_right_camera_4.jpg', 1)
+    rvec_cam_right, tvec_cam_right = find_cam_chess_realpoints(name_image_right, 1)
     right_cam_T_chess_ground_truth = np.zeros((3, 4), np.float32)
     right_cam_T_chess_ground_truth[0:3, 0:3] = cv2.Rodrigues(rvec_cam_right)[0]
     right_cam_T_chess_ground_truth[0:3, 3] = tvec_cam_right.T
@@ -102,7 +107,7 @@ def objective_functionv2(params, points_chessboard, report):
     imgpoints_right_optimize = cv2.projectPoints(pts_chessboard, r_cam2tochess_vector, t_cam2tochess, k_right, dist_right)
     imgpoints_right_real = cv2.projectPoints(pts_chessboard, rvec_cam_right, tvec_cam_right, k_right, dist_right)
 
-    img1 = cv2.imread('./fotos_calibration/top_right_camera_4.jpg')
+    img1 = cv2.imread(name_image_right)
     img = cv2.drawChessboardCorners(img1, (9, 6), imgpoints_right_optimize[0], True)
     cv2.imshow('img', img)
     cv2.waitKey(20)
@@ -116,11 +121,11 @@ def objective_functionv2(params, points_chessboard, report):
 
     # error_sum = 0
     for i in range(dimensions[0] * dimensions[1]):
-        residuals[i] = np.sqrt((imgpoints_right_optimize[0][i][0][0] - imgpoints_right_real[0][i][0][0]) ** 2 + (
-                    imgpoints_right_optimize[0][i][0][1] - imgpoints_right_real[0][i][0][1]) ** 2)
+        residuals[i] = (imgpoints_right_optimize[0][i][0][0] - imgpoints_right_real[0][i][0][0]) ** 2 + (
+                    imgpoints_right_optimize[0][i][0][1] - imgpoints_right_real[0][i][0][1]) ** 2
         # error_sum += residuals[i]
 
-    report['errors'].append(np.mean(residuals))
+    report["image_1"][name_errors_pixels].append(np.mean(np.sqrt(residuals)))
 
     return residuals
 
@@ -175,7 +180,12 @@ dist_left = np.array([-1.65512977e-01, -2.08184195e-01, -2.17490237e-03, -5.0462
 k_right = np.array([[1135.560, 0.0, 490.807], [0.0, 1136.240, 412.468], [0.0, 0.0, 1.0]])
 dist_right = np.array([-2.06069540e-01, -1.27768958e-01, 2.22591520e-03, 1.60327811e-03, 2.08236968e+00])
 
+# Image used
+name_image_left = './fotos_calibration/top_left_camera_10.jpg'
+name_image_right = './fotos_calibration/top_right_camera_10.jpg'
 
+name_errors_pixels = "errors pixels #" + str(1)
+name_errors_3d = "errors 3d #" + str(1)
 
 # termination criteria
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -199,8 +209,8 @@ def main():
     objpoints_right = []  # 3d point in real world space from right camera
     imgpoints_right = []  # 2d points in image plane from right camera.
 
-    image_left = glob.glob('./fotos_calibration/top_left_camera_4.jpg')
-    image_right = glob.glob('./fotos_calibration/top_right_camera_4.jpg')
+    image_left = glob.glob(name_image_left)
+    image_right = glob.glob(name_image_right)
     images = [image_left, image_right]
 
     for index in range(2):
@@ -232,29 +242,35 @@ def main():
     cv2.destroyAllWindows()
 
     # params_initial =np.concatenate(( t_cam2tocam1.T,r_vector_cam2tocam1.T),axis=None)
-    params_initial = [1.0, 0.0, 0.0, 0.1050, -0.2000, 0.1500]
+    params_initial = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-    report = {"errors": []}
+
+    report = {
+        "image_1": {name_errors_pixels: [], name_errors_3d: []},
+    }
 
     # print(objective_function(params_initial))
     # params_optimized = optimize.leastsq(func=objective_functionv2, x0=np.array(params_initial).reshape(1, 6),
     #                                     epsfcn=0.000001, args=(pts_chessboard))
     params_optimized = optimize.leastsq(func=objective_functionv2, x0=np.array(params_initial).reshape(1, 6),
                                         epsfcn=0.000001, args=(pts_chessboard, report))
-
+    cv2.waitKey(-1)
+    params_optimized = optimize.leastsq(func=objective_function, x0=np.array(params_initial).reshape(1, 6),
+                                        epsfcn=0.000001, args=report)
+    cv2.waitKey(-1)
     output_file = "test_json.json"
     print("Saving the json output file to " + str(output_file) + ", please wait, it could take a while ...")
     json_file_handle = open(output_file, 'w')
-    json.encoder.FLOAT_REPR = lambda f: ("%.6f" % f)  # to get only four decimal places on the json file
+    json.encoder.FLOAT_REPR = lambda f: ("%.6f" % f)  # to get only six decimal places on the json file
     print >> json_file_handle, json.dumps(report, indent=2, sort_keys=True)
     json_file_handle.close()
     print("Completed.")
 
     exit(0)
 
-
     params_optimized_3d = optimize.leastsq(func=objective_function, x0=np.array(params_initial).reshape(1, 6),
-                                        epsfcn=0.000001)
+                                           epsfcn=0.000001)
+
 
 
     print('Optimization finished. Press any key to continue.')

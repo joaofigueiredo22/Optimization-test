@@ -165,7 +165,7 @@ def inv_tranformation_matrix(r, t):
 
 # Chessboard dimensions
 dimensions = (6, 9)
-size_board = 100
+size_board = 0.1
 
 # K matrix and distortion coefficients from cameras
 k_left = np.array([[1149.369, 0.0, 471.693], [0.0, 1153.728, 396.955], [0.0, 0.0, 1.0]])
@@ -180,7 +180,7 @@ dist_right = np.array([-2.06069540e-01, -1.27768958e-01, 2.22591520e-03, 1.60327
 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # Creating chessboard points
-pts_chessboard = generate_chessboard(100, (9, 6))
+pts_chessboard = generate_chessboard(0.1, (9, 6))
 
 def main():
 
@@ -218,13 +218,13 @@ def main():
                     imgpoints_right.append(corners2)
 
                 # Draw and display the corners
-                img = cv2.drawChessboardCorners(img, (6, 9), corners2, ret)
+                img = cv2.drawChessboardCorners(img, (9, 6), corners2, ret)
                 cv2.imshow('img', img)
                 cv2.waitKey(-1)
     cv2.destroyAllWindows()
 
     # params_initial =np.concatenate(( t_cam2tocam1.T,r_vector_cam2tocam1.T),axis=None)
-    params_initial = [1.0, 0.0, 0.0, 105.0, -200.0, 150.0]
+    params_initial = [1.0, 0.0, 0.0, 1.050, -0.2000, 0.1500]
 
     # print(objective_function(params_initial))
     params_optimized = optimize.leastsq(func=objective_functionv2, x0=np.array(params_initial).reshape(1, 6),
